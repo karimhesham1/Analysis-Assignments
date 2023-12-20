@@ -1,58 +1,39 @@
-import time
-import matplotlib.pyplot as plt
+def compute_highest_scoring_alignment(x, y, scoring_matrix):
+    n, m = len(x), len(y)
+    dp_matrix = [[0] * (m + 1) for _ in range(n + 1)]
 
-def power_iterative_2(x, n):
-    result = 1
-    while n > 0:
-        result *= x
-        n -= 1
-    return result
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            match_score = dp_matrix[i - 1][j - 1] + scoring_matrix[x[i - 1]][y[j - 1]]
+            gap_x_score = dp_matrix[i - 1][j] + scoring_matrix[x[i - 1]]['-']
+            gap_y_score = dp_matrix[i][j - 1] + scoring_matrix['-'][y[j - 1]]
 
-def power_divide_conquer(x, n):
-    if n == 0:
-        return 1
-    elif n % 2 == 0:
-        half_pow = power_divide_conquer(x, n // 2) 
-        time.sleep(0.5)
-        return half_pow * half_pow
-    else:
-        half_pow = power_divide_conquer(x, (n - 1) // 2)
-        time.sleep(0.5)
-        return half_pow * half_pow * x
+            dp_matrix[i][j] = max(match_score, gap_x_score, gap_y_score)
 
-# Example usage:
-x = 2  # Base number
+    alignment_x, alignment_y = '', ''
+    i, j = n, m
+    while i > 0 or j > 0:
+        if i > 0 and j > 0 and dp_matrix[i][j] == dp_matrix[i - 1][j - 1] + scoring_matrix[x[i - 1]][y[j - 1]]:
+            alignment_x, alignment_y, i, j = x[i - 1] + alignment_x, y[j - 1] + alignment_y, i - 1, j - 1
+        elif i > 0 and dp_matrix[i][j] == dp_matrix[i - 1][j] + scoring_matrix[x[i - 1]]['-']:
+            alignment_x, alignment_y, i = x[i - 1] + alignment_x, '-' + alignment_y, i - 1
+        else:
+            alignment_x, alignment_y, j = '-' + alignment_x, y[j - 1] + alignment_y, j - 1
 
-# Exponents ranging from 10^0 to 10^6
-exponents = [10**i for i in range(7)]
+    return alignment_x, alignment_y
 
-iterative_times = []
-divide_conquer_times = []
+seq_x, seq_y = "ATGCC", "TACGCA"
 
-for n in exponents:
-    # execution time for the iterative method
-    start_time = time.time()
-    power_iterative_2(x, n)
-    end_time = time.time()
-    iterative_times.append(end_time - start_time)
+scoring_mat = {
+    'A': {'A': 1, 'G': -0.8, 'T': -0.2, 'C': -2.3, '-': -0.6},
+    'G': {'A': -0.8, 'G': 1, 'T': -1.1, 'C': -0.7, '-': -1.5},
+    'T': {'A': -0.2, 'G': -1.1, 'T': 1, 'C': -0.5, '-': -0.9},
+    'C': {'A': -2.3, 'G': -0.7, 'T': -0.5, 'C': 1, '-': -1},
+    '-': {'A': -0.6, 'G': -1.5, 'T': -0.9, 'C': -1, '-': float('inf')}
+}
 
-    # Measure execution time for the divide-and-conquer method
-    start_time = time.time()
-    power_divide_conquer(x, n)
-    end_time = time.time()
-    divide_conquer_times.append(end_time - start_time)
-    print(end_time - start_time)
+result_alignment = compute_highest_scoring_alignment(seq_x, seq_y, scoring_mat)
 
-# Plot the results
-plt.figure(figsize=(10, 5))
-plt.plot(exponents, iterative_times, label='Iterative')
-plt.plot(exponents, divide_conquer_times, label='Divide and Conquer')
-plt.xscale('log') 
-plt.yscale('log')  
-plt.xlabel('Exponent (n)')
-plt.ylabel('Execution Time (seconds)')
-plt.xticks(exponents, [f'10^{i}' for i in range(7)])  
-plt.legend()
-plt.title('Execution Time for Power Calculation Methods')
-plt.grid()
-plt.show()
+print("Optimal Alignment for Sequences:")
+print(result_alignment[0])
+print(result_alignment[1])
